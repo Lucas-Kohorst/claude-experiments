@@ -1,0 +1,46 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main  # or your default branch
+
+jobs:
+  detect-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2  # Fetch the last two commits to compare changes
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v37
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Deploy changed projects
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            dir=$(dirname "$file")
+            if [ -f "$dir/package.json" ] && [ -f "$dir/next.config.js" ]; then
+              echo "Detected Next.js project in $dir"
+              cd $dir
+              # Try to pull existing project, create new one if it doesn't exist
+              if ! vercel pull --yes --environment=production --token=$VERCEL_TOKEN; then
+                echo "Creating new Vercel project for $dir"
+                vercel link --confirm --token=$VERCEL_TOKEN
+              fi
+              vercel build --prod --token=$VERCEL_TOKEN
+              vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+              cd -
+            fi
+          done
