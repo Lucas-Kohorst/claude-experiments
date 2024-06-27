@@ -1,6 +1,8 @@
 # Election Topics 
 ## Day 1 6-27-2024
 
+https://election-debate.vercel.app/
+
 Prompt(s)
 > Create a betting website that lets me bet on the presidential election debate topics as they are said. Include a live stream from cnn.com
 
