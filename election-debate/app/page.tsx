@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input"
 import { ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react"
 
 const Home = () => {
-  const [topics, setTopics] = useState([]);
+  const [topics, setTopics] = useState<{ id: string; text: string; upvotes: number; downvotes: number }[]>([]);
   const [newTopic, setNewTopic] = useState('');
-  const [comments, setComments] = useState({});
+  const [comments, setComments] = useState<{ [key: string]: string[] }>({});
   const [newComment, setNewComment] = useState('');
 
   const addTopic = () => {
@@ -21,13 +21,13 @@ const Home = () => {
     }
   };
 
-  const voteTopic = (id, voteType) => {
+  const voteTopic = (id: string, voteType: 'upvotes' | 'downvotes') => {
     setTopics(topics.map(topic => 
       topic.id === id ? { ...topic, [voteType]: topic[voteType] + 1 } : topic
     ));
   };
 
-  const addComment = (topicId) => {
+  const addComment = (topicId: string) => {
     if (newComment.trim() !== '') {
       setComments({
         ...comments,
