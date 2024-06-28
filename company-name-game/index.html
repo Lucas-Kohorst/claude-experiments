@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Naming Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #game-container {
+            margin-top: 20px;
+        }
+        #company-input {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #submit-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #company-list {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+        }
+        .valid {
+            color: green;
+        }
+        .invalid {
+            color: red;
+        }
+        .pending {
+            color: orange;
+        }
+    </style>
+</head>
+<body>
+    <h1>Company Naming Game</h1>
+    <p>Name as many companies as you can within the time limit!</p>
+    <label for="time-limit">Time Limit (seconds): </label>
+    <input type="number" id="time-limit" value="300" min="30" max="600">
+    <button id="start-btn">Start Game</button>
+    
+    <div id="game-container" style="display: none;">
+        <h2 id="timer">Time left: 5:00</h2>
+        <input type="text" id="company-input" placeholder="Enter company name">
+        <button id="submit-btn">Submit</button>
+        <h3>Companies Named:</h3>
+        <ul id="company-list"></ul>
+    </div>
+    
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const gameContainer = document.getElementById('game-container');
+        const timerDisplay = document.getElementById('timer');
+        const companyInput = document.getElementById('company-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const companyList = document.getElementById('company-list');
+        const timeLimitInput = document.getElementById('time-limit');
+
+        let timeLeft;
+        let timer;
+        let companies = [];
+
+        startBtn.addEventListener('click', startGame);
+        submitBtn.addEventListener('click', submitCompany);
+        companyInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') submitCompany();
+        });
+
+        function startGame() {
+            timeLeft = parseInt(timeLimitInput.value);
+            if (isNaN(timeLeft) || timeLeft < 30 || timeLeft > 600) {
+                alert('Please enter a valid time limit between 30 and 600 seconds.');
+                return;
+            }
+            
+            companies = [];
+            companyList.innerHTML = '';
+            gameContainer.style.display = 'block';
+            startBtn.style.display = 'none';
+            timeLimitInput.style.display = 'none';
+            updateTimer();
+            timer = setInterval(updateTimer, 1000);
+            companyInput.focus();
+        }
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `Time left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                endGame();
+            }
+            timeLeft--;
+        }
+
+        async function submitCompany() {
+            const companyName = companyInput.value.trim();
+            if (companyName && !companies.includes(companyName)) {
+                companies.push(companyName);
+                const listItem = document.createElement('li');
+                listItem.textContent = companyName;
+                listItem.classList.add('pending');
+                companyList.appendChild(listItem);
+                companyInput.value = '';
+                
+                try {
+                    const isValid = await checkCompanyWithBBB(companyName);
+                    listItem.classList.remove('pending');
+                    listItem.classList.add(isValid ? 'valid' : 'invalid');
+                } catch (error) {
+                    console.error('Error checking company:', error);
+                    listItem.classList.remove('pending');
+                    listItem.classList.add('invalid');
+                }
+            }
+            companyInput.focus();
+        }
+
+        async function checkCompanyWithBBB(companyName) {
+            const encodedName = encodeURIComponent(companyName);
+            const url = `https://www.bbb.org/search?find_text=${encodedName}&find_type=business`;
+            
+            try {
+                const response = await fetch(url);
+                const html = await response.text();
+                
+                // This is a simple check. In reality, you'd want to parse the HTML properly.
+                return html.includes('No Results Found') === false;
+            } catch (error) {
+                console.error('Error fetching BBB data:', error);
+                throw error;
+            }
+        }
+
+        function endGame() {
+            companyInput.disabled = true;
+            submitBtn.disabled = true;
+            alert(`Game over! You named ${companies.length} companies.`);
+            startBtn.style.display = 'inline';
+            timeLimitInput.style.display = 'inline';
+        }
+    </script>
+</body>
+</html>
